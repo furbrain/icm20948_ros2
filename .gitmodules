@@ -1,0 +1,3 @@
+[submodule "ICM20948_I2CDev"]
+	path = ICM20948_I2CDev
+	url = git@github.com:furbrain/ICM20948_I2CDev.git

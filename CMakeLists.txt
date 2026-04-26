@@ -2,21 +2,31 @@ cmake_minimum_required(VERSION 3.8)
 project(icm20948_ros2)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic -fPIC)
 endif()
+
+add_compile_definitions(ICM_20948_USE_DMP)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(rclcpp REQUIRED)
 
-add_executable(icm20948 src/icm20948.cpp)
+# Add the ICM20948_I2CDev library subdirectory
+add_subdirectory(ICM20948_I2CDev)
+
+add_executable(icm20948
+  src/icm20948.cpp
+)
+
 target_include_directories(icm20948 PUBLIC
+  include/
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+target_link_libraries(icm20948 icm20948_i2cdev)
 target_compile_features(icm20948 PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-
+ament_target_dependencies(icm20948 rclcpp)
 install(TARGETS icm20948
   DESTINATION lib/${PROJECT_NAME})
 

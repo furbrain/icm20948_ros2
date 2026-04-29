@@ -12,6 +12,7 @@ find_package(ament_cmake REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 # Add the ICM20948_I2CDev library subdirectory
 add_subdirectory(ICM20948_I2CDev)
@@ -26,7 +27,7 @@ target_include_directories(icm20948 PUBLIC
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
 target_link_libraries(icm20948 icm20948_i2cdev)
 target_compile_features(icm20948 PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-ament_target_dependencies(icm20948 rclcpp)
+ament_target_dependencies(icm20948 rclcpp sensor_msgs)
 install(TARGETS icm20948
   DESTINATION lib/${PROJECT_NAME})
 

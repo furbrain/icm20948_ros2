@@ -17,18 +17,31 @@ find_package(sensor_msgs REQUIRED)
 # Add the ICM20948_I2CDev library subdirectory
 add_subdirectory(ICM20948_I2CDev)
 
-add_executable(icm20948
-  src/icm20948.cpp
+add_executable(icm20948_dpm
+  src/icm20948_dpm.cpp
 )
 
-target_include_directories(icm20948 PUBLIC
+add_executable(icm20948_raw
+  src/icm20948_raw.cpp
+)
+
+target_include_directories(icm20948_raw PUBLIC
   include/
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_link_libraries(icm20948 icm20948_i2cdev)
-target_compile_features(icm20948 PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-ament_target_dependencies(icm20948 rclcpp sensor_msgs)
-install(TARGETS icm20948
+target_link_libraries(icm20948_raw icm20948_i2cdev)
+target_compile_features(icm20948_raw PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+ament_target_dependencies(icm20948_raw rclcpp sensor_msgs)
+
+target_include_directories(icm20948_dpm PUBLIC
+  include/
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+target_link_libraries(icm20948_dpm icm20948_i2cdev)
+target_compile_features(icm20948_dpm PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+ament_target_dependencies(icm20948_dpm rclcpp sensor_msgs)
+
+install(TARGETS icm20948_raw icm20948_dpm
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

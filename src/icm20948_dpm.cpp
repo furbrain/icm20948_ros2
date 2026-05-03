@@ -12,7 +12,7 @@ class ICM20948_Node : public rclcpp::Node
 {
   private:
     rclcpp::TimerBase::SharedPtr timer_;
-    rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr publisher_;
+    rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr publisher_imu_;
 
   protected:
     int i2c_bus_;
@@ -43,7 +43,7 @@ class ICM20948_Node : public rclcpp::Node
       icm20948_->startupDefault(true);
       usleep(100000); // Sleep for 10ms to allow the ICM-20948 to complete its startup before we start communicating with it
       initialise();
-      publisher_ = this->create_publisher<sensor_msgs::msg::Imu>("imu", 10);
+      publisher_imu_ = this->create_publisher<sensor_msgs::msg::Imu>("imu", 10);
       timer_ = this->create_wall_timer(std::chrono::milliseconds(500/odr_), std::bind(&ICM20948_Node::readData, this));
     }
 
@@ -222,7 +222,7 @@ class ICM20948_Node : public rclcpp::Node
           RCLCPP_INFO(this->get_logger(), "Received Header2; data is: 0x%04X", data.header2);
           RCLCPP_INFO(this->get_logger(), "Accuracies: Accel:%d Gyro:%d Cpass:%d", data.Accel_Accuracy, data.Gyro_Accuracy, data.Compass_Accuracy);
         }
-        publisher_->publish(imu_msg);
+        publisher_imu_->publish(imu_msg);
       }
     } while (icm20948_->status == ICM_20948_Stat_FIFOMoreDataAvail && rclcpp::ok());
     }

@@ -18,7 +18,7 @@ class ICM20948_Node : public rclcpp::Node
     int i2c_bus_;
     int i2c_address_;
     std::string frame_id_;
-    int dmp_rate_;
+    int dmp_rate_ = 55;
     int odr_;
     int gyro_fss_;
     int acc_fss_;
@@ -38,6 +38,10 @@ class ICM20948_Node : public rclcpp::Node
       icm20948_ = std::make_unique<ICM_20948_I2CDEV>(i2c_bus_, i2c_address_);
     
       icm20948_->enableDebugging(&std::cout); // Enable debug messages to the console
+
+      usleep(100000); // Sleep for 10ms to allow the ICM-20948 to power up before we start communicating with it
+      icm20948_->startupDefault(true);
+      usleep(100000); // Sleep for 10ms to allow the ICM-20948 to complete its startup before we start communicating with it
       initialise();
       publisher_ = this->create_publisher<sensor_msgs::msg::Imu>("imu", 10);
       timer_ = this->create_wall_timer(std::chrono::milliseconds(500/odr_), std::bind(&ICM20948_Node::readData, this));
@@ -48,10 +52,6 @@ class ICM20948_Node : public rclcpp::Node
         RCLCPP_WARN(this->get_logger(), "Checking params: Gyro FSS %d", gyro_fss_);
         RCLCPP_WARN(this->get_logger(), "Checking params: ODR %d", odr_);
       // Check if parameters are within valid ranges and log warnings if not
-      if (dmp_rate_ < 4 || dmp_rate_ > 250) {
-        RCLCPP_WARN(this->get_logger(), "DMP rate %d is out of range (4-250). Setting to default (55).", dmp_rate_);
-        dmp_rate_ = 55;
-      }
       switch (gyro_fss_) {
         case 250:
           gyro_fss_enum_ = dps250;
@@ -88,8 +88,8 @@ class ICM20948_Node : public rclcpp::Node
           acc_fss_enum_ = gpm4;
           acc_fss_ = 4;
       }
-      if (odr_ < 1 || odr_ > 250 || (odr_ > dmp_rate_)) {
-        RCLCPP_WARN(this->get_logger(), "ODR %d is out of range (1-250) (or greater than DMP rate %d). Setting to default (50).", odr_, dmp_rate_);
+      if (odr_ < 1 || odr_ > 225) {
+        RCLCPP_WARN(this->get_logger(), "ODR %d is out of range (1-225). Setting to default (50).", odr_);
         odr_ = 50;
       } 
     }
@@ -109,6 +109,7 @@ class ICM20948_Node : public rclcpp::Node
       success &= (icm20948_->enableDMPSensor(INV_ICM20948_SENSOR_GYROSCOPE) == ICM_20948_Stat_Ok);
       success &= (icm20948_->enableDMPSensor(INV_ICM20948_SENSOR_ACCELEROMETER) == ICM_20948_Stat_Ok);
       success &= (icm20948_->enableDMPSensor(INV_ICM20948_SENSOR_GEOMAGNETIC_FIELD) == ICM_20948_Stat_Ok);
+      success &= (icm20948_->enableDMPSensor(INV_ICM20948_SENSOR_MAGNETIC_FIELD_UNCALIBRATED) == ICM_20948_Stat_Ok);
       //success &= (icm20948_->enableDMPSensor(INV_ICM20948_SENSOR_GYROSCOPE_UNCALIBRATED) == ICM_20948_Stat_Ok);
 
       //Set ODRs
@@ -198,6 +199,28 @@ class ICM20948_Node : public rclcpp::Node
           imu_msg.angular_velocity.z = gz;
         } else {
           RCLCPP_INFO(this->get_logger(), "No gyroscope data; header: 0x%04X", data.header);
+        }
+        if (data.header & DMP_header_bitmap_Compass_Calibr) {
+          RCLCPP_INFO(this->get_logger(), "Received compass data! Header: 0x%04X", data.header);
+          double mx = ((double)(data.Compass_Calibr.Data.X)); // Convert to uT
+          double my = ((double)(data.Compass_Calibr.Data.Y)); // Convert to uT
+          double mz = ((double)(data.Compass_Calibr.Data.Z)); // Convert to uT
+          RCLCPP_INFO(this->get_logger(), "Compass data is: MX:%f MY:%f MZ:%f", mx, my, mz);
+        } else {
+          RCLCPP_INFO(this->get_logger(), "No compass data; header: 0x%04X", data.header);
+        }
+        if (data.header & DMP_header_bitmap_Compass) {
+          RCLCPP_INFO(this->get_logger(), "Received compass data! Header: 0x%04X", data.header);
+          double mx = ((double)(data.Compass.Data.X)); // Convert to uT
+          double my = ((double)(data.Compass.Data.Y)); // Convert to uT
+          double mz = ((double)(data.Compass.Data.Z)); // Convert to uT
+          RCLCPP_INFO(this->get_logger(), "Compass data is: MX:%f MY:%f MZ:%f", mx, my, mz);
+        } else {
+          RCLCPP_INFO(this->get_logger(), "No compass data; header: 0x%04X", data.header);
+        }
+        if (data.header & DMP_header_bitmap_Header2) {
+          RCLCPP_INFO(this->get_logger(), "Received Header2; data is: 0x%04X", data.header2);
+          RCLCPP_INFO(this->get_logger(), "Accuracies: Accel:%d Gyro:%d Cpass:%d", data.Accel_Accuracy, data.Gyro_Accuracy, data.Compass_Accuracy);
         }
         publisher_->publish(imu_msg);
       }

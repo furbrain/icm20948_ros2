@@ -218,9 +218,9 @@ class ICM20948_Node : public rclcpp::Node
       sensor_msgs::msg::MagneticField mag_msg = sensor_msgs::msg::MagneticField();
       mag_msg.header.stamp = imu_msg.header.stamp; // Use the same timestamp as the IMU data
       mag_msg.header.frame_id = frame_id_;  
-      double mx = ((double)(mag_data.Data.HX)) * 1e-6 * 32752.0/4912.0; // Convert to Tesla
-      double my = ((double)(mag_data.Data.HY)) * 1e-6 * 32752.0/4912.0; // Convert to Tesla
-      double mz = ((double)(mag_data.Data.HZ)) * 1e-6 * 32752.0/4912.0; // Convert to Tesla
+      double mx = ((double)(mag_data.Data.HX)) * +1 * (4912.0/32752.0) * 1e-6; // Convert to Tesla
+      double my = ((double)(mag_data.Data.HY)) * -1 * (4912.0/32752.0) * 1e-6; // Convert to Tesla - this axis is inverted compared to the accelerometer and gyro
+      double mz = ((double)(mag_data.Data.HZ)) * -1 * (4912.0/32752.0) * 1e-6; // Convert to Tesla - this axis is inverted compared to the accelerometer and gyro
       mag_msg.magnetic_field.x = mx;
       mag_msg.magnetic_field.y = my;
       mag_msg.magnetic_field.z = mz;
